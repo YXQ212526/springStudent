@@ -1,73 +1,55 @@
 package dao;
 
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+
+import javax.annotation.Resource;
+
 
 import enums.Status;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 import pojo.Student;
 
-public class StudentDao extends CreateConn {
+@Repository
+public class StudentDao {
 
-  // PreparedStatement preparedStatement;
+  @Resource
+  JdbcTemplate jdbcTemplate;
 
-  public static Student select(int id) {
+  public Student select(int id) {
 
-    String selectSql = "select id,name,status from student where id=" + id;
-
+    RowMapper<Student> rowMapper = (var1, num) -> {
+      Student student = new Student();
+      student.setName(var1.getString("name"));
+      student.setId(var1.getInt("id"));
+      student.setStatus(Status.getType(var1.getString("status")));
+      return student;
+    };
     try {
-      resultSet = statement.executeQuery(selectSql);
-      if (resultSet.next()) {
-        Student student = new Student();
-        student.setName(resultSet.getString("name"));
-        student.setStatus(Status.getType(resultSet.getString("status")));
-        student.setId(id);
-        return student;
-      }
-    } catch (SQLException e) {
-      System.out.println("student:SQLException:select");
+      Student student = jdbcTemplate.queryForObject("select id,name,status from student where id=?", rowMapper, id);
+      return student;
+    } catch (DataAccessException e) {
+      System.out.println("no result");
     }
     return null;
   }
 
-  public static void insert(Student student) {
-    String insertSql = String.format("insert into student(id,name,status) values('%d','%s','%s') ",
+  public void insert(Student student) {
+
+
+    jdbcTemplate.update("insert into student(id,name,status) values(?,?,?)",
         student.getId(), student.getName(), student.getStatus());
-    // String insertSql = "insert into student(name) values(?) ";
-    //  String insertSql = "insert into student(name) values('"+name+"')";
-    //  String insertSql = "insert into student(name) values('hi')";
-
-    try {
-//      preparedStatement=connection.prepareStatement(insertSql);
-//      preparedStatement.setString(1,name);
-//      preparedStatement.execute();
-      statement.execute(insertSql);
-      System.out.println("student:insert success");
-
-    } catch (SQLException e) {
-      System.out.println("student:SQLException:insert");
-    }
   }
 
-  public static int update(int id, int status) {
-    String updateSql = String.format("update student set status='%s' where id = %d", Status.get(status), id);
-    try {
-      return statement.executeUpdate(updateSql);
-    } catch (SQLException e) {
-      System.out.println("student:SQLException:update");
-    }
-    return -1;
+  public int update(int id, int status) {
+
+    return jdbcTemplate.update("update student set status=? where id = ?", status, id);
   }
 
-  public static void delete(int id) {
-    String deleteSql = String.format("delete from student where id = %d", id);
-    try {
-      statement.execute(deleteSql);
-      System.out.println("student:delete success");
+  public void delete(int id) {
 
-    } catch (SQLException e) {
-      System.out.println("student:SQLException:delete");
-    }
+    jdbcTemplate.update("delete from student where id = ?", id);
   }
 
 }

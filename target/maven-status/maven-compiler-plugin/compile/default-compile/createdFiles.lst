@@ -1,10 +1,11 @@
-Main.class
 dao/CourseDao.class
 dao/ScoreDao.class
 enums/Status.class
 pojo/Course.class
-pojo/Student.class
+pojo/StuCourScor.class
+aop/LogAop.class
 dao/StudentDao.class
 pojo/Close.class
-dao/CreateConn.class
+Main.class
+pojo/Student.class
 pojo/Score.class

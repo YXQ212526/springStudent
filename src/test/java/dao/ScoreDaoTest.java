@@ -1,31 +1,40 @@
 package dao;
 
-import org.junit.AfterClass;
+import javax.annotation.Resource;
+
+
 import org.junit.Assert;
-import org.junit.BeforeClass;
+
+import org.junit.FixMethodOrder;
 import org.junit.Test;
-import pojo.Course;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
 import pojo.Score;
-import pojo.Student;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath*:myxml.xml")
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 
 public class ScoreDaoTest {
 
-  @BeforeClass
-  public static void insert() {
 
-    Student student1 = new Student();
-    student1.setId(1);
-    student1.setName("jim");
-    Student student2 = new Student();
-    student2.setId(2);
-    student2.setName("alice");
-    Student student3 = new Student();
-    student3.setId(3);
-    student3.setName("bob");
+  @Resource
+  ScoreDao scoreDao;
 
-    StudentDao.insert(student1);
-    StudentDao.insert(student2);
-    StudentDao.insert(student3);
+  @Resource
+  StudentDaoTest studentDaoTest;
+
+  @Resource
+  CourseDaoTest courseDaoTest;
+
+  public void insert() {
+
+    studentDaoTest.insert();
+
+    courseDaoTest.insert();
 
     Score score1 = new Score();
     score1.setCourseId(1);
@@ -48,40 +57,37 @@ public class ScoreDaoTest {
     score4.setStudentId(3);
     score4.setYear(2019);
 
-    ScoreDao.insert(score1);
-    ScoreDao.insert(score2);
-    ScoreDao.insert(score3);
-    ScoreDao.insert(score4);
+    scoreDao.insert(score1);
+    scoreDao.insert(score2);
+    scoreDao.insert(score3);
+    scoreDao.insert(score4);
   }
 
-  @AfterClass
-  public static void close() {
-    CreateConn.close();
-  }
 
   @Test
   public void select() {
-    Assert.assertSame(ScoreDao.select(1, 2019).size(), 2);
-    Assert.assertSame(ScoreDao.select(1, 2019).get(1), 80);
-    Assert.assertSame(ScoreDao.select(1, 2019).get(2), 70);
-    Assert.assertNull(ScoreDao.select(0, 2019).get(1));
+    Assert.assertEquals(scoreDao.select(1, 2019).size(), 2);
+    Assert.assertEquals(scoreDao.select(1, 2019).get(0).getStudent().getName(), "jim");
+    Assert.assertEquals(scoreDao.select(1, 2019).get(1).getCourse().getId(), 2);
+    Assert.assertEquals(scoreDao.select(1, 2019).get(1).getScore().getGoal(), 70);
   }
 
   @Test
   public void getTop10() {
-    Assert.assertSame(ScoreDao.getTop10().size(), 3);
-    Assert.assertTrue(ScoreDao.getTop10().get(1) == 150);
-    Assert.assertTrue(ScoreDao.getTop10().get(2) == 20);
-    Assert.assertTrue(ScoreDao.getTop10().get(3) == 50);
+
+    Assert.assertEquals(scoreDao.getTop10().size(), 3);
+    Assert.assertEquals(scoreDao.getTop10().get(0).getStudent().getName(), "jim");
+    Assert.assertEquals(scoreDao.getTop10().get(1).getTotal(), 50);
 
   }
 
   @Test
-  public void GPA() {
-    Assert.assertSame(ScoreDao.GPA().size(), 3);
-    Assert.assertTrue(ScoreDao.GPA().get(1) == 3.0);
-    Assert.assertTrue(ScoreDao.GPA().get(2) == 0.8);
-    Assert.assertTrue(ScoreDao.GPA().get(3) == 2);
+  public void getGPA() {
+    insert();
+    Assert.assertEquals(scoreDao.GPA().size(), 3);
+    Assert.assertEquals(scoreDao.GPA().get(0).getStudent().getName(), "jim");
+    Assert.assertEquals(scoreDao.GPA().get(1).getStudent().getId(), 2);
+    Assert.assertTrue(scoreDao.GPA().get(2).getGpa() == 2);
 
   }
 }

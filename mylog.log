@@ -1,0 +1,4 @@
+14:38:49.171 [main] INFO  aop.LogAop - dao.ScoreDao will select :2
+14:38:49.652 [main] INFO  aop.LogAop - dao.ScoreDao will getTop10 : 
+14:40:10.208 [main] INFO  aop.LogAop - dao.ScoreDao will select :2
+14:40:10.702 [main] INFO  aop.LogAop - dao.ScoreDao will getTop10 : 

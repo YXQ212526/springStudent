@@ -1,62 +1,52 @@
 package dao;
 
-import java.sql.SQLException;
+import javax.annotation.Resource;
 
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 import pojo.Course;
 
-public class CourseDao extends CreateConn {
+@Repository
+public class CourseDao {
 
+  @Resource
+  JdbcTemplate jdbcTemplate;
 
-  public static Course select(int id) {
+  public Course select(int id) {
 
-    String selectSql = "select name from course where id=" + id;
+    RowMapper<Course> rowMapper = (var1, num) -> {
+      Course course = new Course();
+      course.setName(var1.getString("name"));
+      course.setId(var1.getInt("id"));
+      return course;
+    };
+
 
     try {
-      resultSet = statement.executeQuery(selectSql);
-      if (resultSet.next()) {
-        Course course = new Course();
-        course.setName(resultSet.getString("name"));
-        course.setId(id);
-
-        return course;
-      }
-    } catch (SQLException e) {
-      System.out.println("Course:SQLException:select");
+      Course course =jdbcTemplate.queryForObject("select id,name from course where id=?", rowMapper, id);
+      return course;
+    } catch (DataAccessException e) {
+      System.out.println("no result");
     }
-
     return null;
+
   }
 
-  public static void insert(Course course) {
-    String insertSql = String.format("insert into course(id,name) values('%d','%s') ", course.getId(), course.getName());
+  public void insert(Course course) {
 
-    try {
-      statement.execute(insertSql);
-      System.out.println("course:insert success");
-
-    } catch (SQLException e) {
-      System.out.println("Course:SQLException:insert");
-    }
+    jdbcTemplate.update("insert into course(id,name) values(?,?) ", course.getId(), course.getName());
   }
 
-  public static int update(int id, String name) {
-    String updateSql = String.format("update course set name='%s' where id = %d", name, id);
-    try {
-      return statement.executeUpdate(updateSql);
+  public int update(int id, String name) {
 
-    } catch (SQLException e) {
-      System.out.println("Course:SQLException:update");
-    }
-    return -1;
+    return jdbcTemplate.update("update course set name=? where id = ?", name, id);
+
   }
 
-  public static void delete(int id) {
-    String deleteSql = String.format("delete from course where id = %d", id);
-    try {
-      statement.execute(deleteSql);
-      System.out.println("course:delete success");
-    } catch (SQLException e) {
-      System.out.println("Course:SQLException:delete");
-    }
+  public void delete(int id) {
+
+    jdbcTemplate.update("delete from course where id = ?", id);
   }
 }

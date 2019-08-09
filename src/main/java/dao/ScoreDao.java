@@ -1,107 +1,94 @@
 package dao;
 
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.List;
+
+
+import javax.annotation.Resource;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 
 import pojo.Course;
 import pojo.Score;
+import pojo.StuCourScor;
 import pojo.Student;
 
-public class ScoreDao extends CreateConn {
+@Repository
+public class ScoreDao {
 
-  public static Map<Student, Map<Course, Score>> select(int studentId, int year) {
+  @Resource
+  JdbcTemplate jdbcTemplate;
 
-    Map<Student, Map<Course, Score>> map = new HashMap<Student, Map<Course, Score>>();
-    // String selectSql = "select course_id,goal from score where student_id=" + studentId + " and year=" + year;
-    String selectSql = String.format("select student.id as sid,student.name as sname,course.id as cid,course.name as cname, goal "
-        + "from student,score,course where student.id=%d and year=%d "
-        + "and student.id=score.student_id and course.id=score.course_id", studentId, year);
-    try {
-      resultSet = statement.executeQuery(selectSql);
-      while (resultSet.next()) {
-        Student student = new Student();
-        student.setName(resultSet.getString("sname"));
-        student.setId(resultSet.getInt("sid"));
-        Course course = new Course();
-        course.setId(resultSet.getInt("cid"));
-        course.setName(resultSet.getString("cname"));
-        Score score = new Score();
-        score.setGoal(resultSet.getInt("goal"));
-        Map<Course, Score> interMap = new HashMap<Course, Score>();
-        interMap.put(course, score);
-        map.put(student, interMap);
-      }
-      System.out.println("score:select success");
-      return map;
-    } catch (SQLException e) {
-      System.out.println("score:SQLException:select");
-    }
+  public List<StuCourScor> select(int studentId, int year) {
 
-    return null;
+    RowMapper<StuCourScor> rowMapper = (var1, row) -> {
+      Student student = new Student();
+      student.setName(var1.getString("sname"));
+      student.setId(var1.getInt("sid"));
+      Course course;
+      course = new Course();
+      course.setId(var1.getInt("cid"));
+      course.setName(var1.getString("cname"));
+      Score score = new Score();
+      score.setGoal(var1.getInt("goal"));
+      StuCourScor stuCourScor = new StuCourScor();
+      stuCourScor.setCourse(course);
+      stuCourScor.setScore(score);
+      stuCourScor.setStudent(student);
+      return stuCourScor;
+    };
+    List<StuCourScor> list = jdbcTemplate
+        .query("select student.id as sid,student.name as sname,course.id as cid,course.name as cname, goal "
+            + "from student,score,course where student.id=? and year=? "
+            + "and student.id=score.student_id and course.id=score.course_id", rowMapper, studentId, year);
+
+    return list;
   }
 
-  public static Map<Student, Integer> getTop10() {
+  public List<StuCourScor> getTop10() {
+    RowMapper<StuCourScor> rowMapper = (var1, row) -> {
+      Student student = new Student();
+      student.setName(var1.getString("sname"));
+      student.setId(var1.getInt("sid"));
+      StuCourScor stuCourScor = new StuCourScor();
+      stuCourScor.setStudent(student);
+      stuCourScor.setTotal(var1.getInt("total"));
+      return stuCourScor;
+    };
 
-    Map<Student, Integer> map = new HashMap<Student, Integer>();
-    String selectSql = "select student.id,student.name,"
-        + "sum(score.goal) as 总成绩 "
+    List<StuCourScor> list = jdbcTemplate.query("select student.id as sid,student.name as sname,"
+        + "sum(score.goal) as total "
         + "from student inner join score on "
         + "student.id=score.student_id "
         + "group by student.id "
-        + "order by 总成绩 limit 10 ";
-
-    try {
-      resultSet = statement.executeQuery(selectSql);
-      while (resultSet.next()) {
-        Student student = new Student();
-        student.setName(resultSet.getString("name"));
-        student.setId(resultSet.getInt("id"));
-        map.put(student, resultSet.getInt("总成绩"));
-      }
-      System.out.println("score:getTop10 success");
-      return map;
-    } catch (SQLException e) {
-      System.out.println("score:SQLException:top10");
-    }
-
-    return null;
+        + "order by total desc limit 10 ", rowMapper);
+    return list;
   }
 
-  public static Map<Student, Double> GPA() {
+  public List<StuCourScor> GPA() {
 
-    Map<Student, Double> map = new HashMap<Student, Double>();
-    String selectSql = "select student.id,student.name,avg(goal) from"
+    RowMapper<StuCourScor> rowMapper = (var1, row) -> {
+      Student student = new Student();
+      student.setName(var1.getString("sname"));
+      student.setId(var1.getInt("sid"));
+      StuCourScor stuCourScor = new StuCourScor();
+      stuCourScor.setStudent(student);
+      stuCourScor.setGpa(var1.getInt("val") * 4 / 100);
+      return stuCourScor;
+    };
+    List<StuCourScor> list = jdbcTemplate.query("select student.id as sid,student.name as sname,avg(goal) as val from"
         + " student,score where student.id=score.student_id "
-        + "group by student.id";
-
-    try {
-      resultSet = statement.executeQuery(selectSql);
-      while (resultSet.next()) {
-        Student student=new Student();
-        student.setId(resultSet.getInt("id"));
-        student.setName(resultSet.getString("name"));
-        map.put(student, resultSet.getDouble("avg(goal)") * 4 / 100);
-      }
-      System.out.println("score:GPA success");
-      return map;
-    } catch (SQLException e) {
-      System.out.println("score:SQLException:GPA");
-    }
-
-    return null;
+        + "group by student.id", rowMapper);
+    return list;
   }
 
-  public static void insert(Score score) {
-    String insertSql = String.format("insert into score(course_id,goal,student_id,year) values('%d','%d','%d','%d')",
+  public void insert(Score score) {
+
+    jdbcTemplate.update("insert into score(course_id,goal,student_id,year) values(?,?,?,?)",
         score.getCourseId(), score.getGoal(), score.getStudentId(), score.getYear());
 
-    try {
-      statement.execute(insertSql);
-      System.out.println("score:insert success");
-    } catch (SQLException e) {
-      System.out.println("score:SQLException:insert");
-    }
   }
 
 
